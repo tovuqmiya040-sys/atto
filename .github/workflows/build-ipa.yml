@@ -24,50 +24,56 @@ jobs:
         run: bun run build
         env:
           NODE_ENV: production
-
-      - name: 5. Add and Sync iOS Platform
+      
+      - name: 5. Debug Build Output
         run: |
-          npx cap add ios
-          npx cap sync ios
+          echo "Listing dist directory content:"
+          ls -R dist || echo "dist directory not found"
 
-      - name: 6. Set Permissions
+      - name: 6. Capacitor Sync and Setup
         run: |
-          PLIST="ios/App/App/Info.plist"
-          if [ -f "$PLIST" ]; then
-            plutil -replace NSCameraUsageDescription -string "ATTO requires camera access to scan QR codes" "$PLIST"
-            plutil -replace NSPhotoLibraryUsageDescription -string "ATTO requires photo library access to save QR codes" "$PLIST"
-            plutil -replace NSPhotoLibraryAddUsageDescription -string "ATTO requires photo library access to save QR codes" "$PLIST"
-          else
-            echo "Error: Info.plist not found at $PLIST!"
+          if [ ! -f "dist/index.html" ]; then
+            echo "Error: dist/index.html not found after build!"
             exit 1
           fi
+          
+          if [ ! -d "ios" ]; then
+            npx cap add ios
+          fi
+          
+          # This step requires the icon file to be in the root directory.
+          # Assuming "atto icon.jpg" exists. If not, this will fail.
+          # mkdir -p assets
+          # cp "atto icon.jpg" assets/icon.jpg
+          # cp "atto icon.jpg" assets/splash.jpg
+          # npx capacitor-assets generate --ios
+          
+          npx cap sync ios
+          
+          PLIST="ios/App/App/Info.plist"
+          if [ -f "$PLIST" ]; then
+            plutil -replace NSCameraUsageDescription -string "ATTO QR kodlarni skanerlash uchun kameraga kirish huquqini talab qiladi" "$PLIST"
+            plutil -replace NSPhotoLibraryUsageDescription -string "ATTO QR kodlarni saqlash uchun rasm galereyasiga kirish huquqini talab qiladi" "$PLIST"
+            plutil -replace NSPhotoLibraryAddUsageDescription -string "ATTO QR kodlarni saqlash uchun rasm galereyasiga kirish huquqini talab qiladi" "$PLIST"
+          fi
+          
+          cd ios/App && pod install && cd ../..
 
-      - name: 7. Build, Package, and Sign IPA
+      - name: 7. Build IPA
         run: |
-          # Build the Xcode project
-          xcodebuild build -workspace ios/App/App.xcworkspace \
+          # Although 'clean' is used, the subsequent build should correctly bundle resources
+          # as per the successful example provided.
+          xcodebuild clean build -workspace ios/App/App.xcworkspace \
             -scheme App \
             -configuration Release \
             -sdk iphoneos \
             -derivedDataPath ios/App/build \
-            CODE_SIGNING_ALLOWED=NO
-
-          # Create the Payload directory
-          mkdir -p Payload
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY=""
           
-          # Copy the built .app bundle to Payload
+          mkdir -p Payload
           cp -r ios/App/build/Build/Products/Release-iphoneos/App.app Payload/
-
-          # --- CRITICAL STEP: Use rsync to forcefully sync web assets ---
-          echo "--- Force syncing web assets from dist to Payload/App.app/public ---"
-          rsync -av --delete dist/ Payload/App.app/public/
-
-          # --- DEBUG: Verify final contents of the Payload before zipping --- #
-          echo "--- Listing Final Payload Contents ---"
-          ls -lR Payload
-          echo "------------------------------------"
-
-          # Create the final IPA file
           zip -r ATTO.ipa Payload
 
       - name: 8. Upload IPA Artifact
