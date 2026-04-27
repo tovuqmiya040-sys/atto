@@ -30,10 +30,7 @@ jobs:
 
       - name: 6. Sync Capacitor and Prepare iOS
         run: |
-          # Run sync, which includes 'copy' and 'update' (pod install)
           npx cap sync ios
-
-          # Add permissions after sync has created/updated the project
           PLIST="ios/App/App/Info.plist"
           if [ -f "$PLIST" ]; then
             plutil -replace NSCameraUsageDescription -string "ATTO requires camera access to scan QR codes" "$PLIST"
@@ -44,9 +41,8 @@ jobs:
             exit 1
           fi
 
-      - name: 7. Build and Create IPA
+      - name: 7. Build, Verify, and Create IPA
         run: |
-          # Build WITHOUT 'clean' to prevent deleting the synced web assets
           xcodebuild build -workspace ios/App/App.xcworkspace \
             -scheme App \
             -configuration Release \
@@ -54,11 +50,14 @@ jobs:
             -derivedDataPath ios/App/build \
             CODE_SIGNING_ALLOWED=NO
 
-          # Create Payload directory and copy the .app bundle
           mkdir -p Payload
           cp -r ios/App/build/Build/Products/Release-iphoneos/App.app Payload/
 
-          # Zip to create the .ipa file
+          # --- DEBUG: List contents of the Payload before zipping --- #
+          echo "--- Listing Payload Contents ---"
+          ls -lR Payload
+          echo "----------------------------------"
+
           zip -r ATTO.ipa Payload
 
       - name: 8. Upload IPA Artifact
