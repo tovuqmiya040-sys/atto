@@ -9,43 +9,42 @@ jobs:
   build:
     runs-on: macos-14
     steps:
-      - name: 1. Kodni yuklab olish
+      - name: 1. Checkout Code
         uses: actions/checkout@v4
 
-      - name: 2. Bun o'rnatish
+      - name: 2. Setup Bun
         uses: oven-sh/setup-bun@v1
         with:
           bun-version: latest
 
-      - name: 3. Bog'liqliklarni o'rnatish
+      - name: 3. Install Dependencies
         run: bun install
 
-      - name: 4. Veb-qismni yig'ish
+      - name: 4. Build Web Assets
         run: bun run build
         env:
           NODE_ENV: production
 
-      - name: 5. Capacitor-ni sozlash va iOS platformasini tayyorlash
+      - name: 5. Sync Capacitor and Prepare iOS
         run: |
           if [ ! -d "ios" ]; then
             npx cap add ios
           fi
-          
           npx cap sync ios
-          
           PLIST="ios/App/App/Info.plist"
           if [ -f "$PLIST" ]; then
-            plutil -replace NSCameraUsageDescription -string "ATTO QR kodlarni skanerlash uchun kameraga kirish huquqini talab qiladi" "$PLIST"
+            plutil -replace NSCameraUsageDescription -string "ATTO requires camera access to scan QR codes" "$PLIST"
+            plutil -replace NSPhotoLibraryUsageDescription -string "ATTO requires photo library access to save QR codes" "$PLIST"
+            plutil -replace NSPhotoLibraryAddUsageDescription -string "ATTO requires photo library access to save QR codes" "$PLIST"
           else
-            echo "Xatolik: Info.plist fayli ($PLIST) topilmadi!"
+            echo "Error: Info.plist not found at $PLIST!"
             exit 1
           fi
 
-      - name: 6. iOS uchun native modullarni o'rnatish (CocoaPods)
-        # Podfile `ios/App` papkasida joylashganligi uchun shu yerdan ishga tushiramiz
+      - name: 6. Install Pods
         run: cd ios/App && pod install && cd ../..
 
-      - name: 7. Xcode loyihasini yig'ish va imzosiz IPA yaratish
+      - name: 7. Build and Create IPA
         run: |
           xcodebuild clean build -workspace ios/App/App.xcworkspace \
             -scheme App \
@@ -54,11 +53,14 @@ jobs:
             -derivedDataPath ios/App/build \
             CODE_SIGNING_ALLOWED=NO
 
+          # Create Payload directory and copy the .app bundle
           mkdir -p Payload
           cp -r ios/App/build/Build/Products/Release-iphoneos/App.app Payload/
+
+          # Zip to create the .ipa file
           zip -r ATTO.ipa Payload
 
-      - name: 8. Tayyor IPA faylini artefakt sifatida saqlash
+      - name: 8. Upload IPA Artifact
         uses: actions/upload-artifact@v4
         with:
           name: ATTO-ipa
