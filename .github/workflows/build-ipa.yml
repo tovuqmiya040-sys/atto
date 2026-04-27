@@ -9,80 +9,74 @@ jobs:
   build:
     runs-on: macos-14
     steps:
-      - uses: actions/checkout@v4
+      - name: 1. Kodni yuklab olish
+        uses: actions/checkout@v4
 
-      - uses: oven-sh/setup-bun@v1
+      - name: 2. Bun o'rnatish
+        uses: oven-sh/setup-bun@v1
         with:
           bun-version: latest
 
-      - name: Install dependencies
+      - name: 3. Bog'liqliklarni o'rnatish
         run: bun install
 
-      - name: Build web
+      - name: 4. Veb-qismni yig'ish
         run: bun run build
         env:
           NODE_ENV: production
 
-      - name: Debug Build Output
+      - name: 5. Capacitorni sozlash va sinxronlash
         run: |
-          echo "Listing dist directory content:"
-          ls -R dist || echo "dist directory not found"
-
-      - name: Capacitor Sync
-        run: |
-          # Ensure dist directory exists and has index.html
-          if [ ! -f "dist/index.html" ]; then
-            echo "Error: dist/index.html not found after build!"
-            exit 1
-          fi
-          
-          # Install Capacitor platforms if not already present
+          # Capacitor iOS platformasini qo'shish (agar mavjud bo'lmasa)
           if [ ! -d "ios" ]; then
             npx cap add ios
           fi
           
-          # Generate Icons and Splash screens
+          # Ikonka va Splash-skrinlar uchun resurslarni tayyorlash
+          # DIQQAT: Loyihangiz ildizida "atto icon.jpg" fayli borligiga ishonch hosil qiling
           mkdir -p assets
-          cp "atto icon.jpg" assets/icon.jpg
-          cp "atto icon.jpg" assets/splash.jpg
-          npx capacitor-assets generate --ios
+          if [ -f "atto icon.jpg" ]; then
+            cp "atto icon.jpg" assets/icon.jpg
+            cp "atto icon.jpg" assets/splash.jpg
+            # npx capacitor-assets generate --ios # Bu qadamni vaqtincha o'chirib turamiz, chunki u ba'zan muammo tug'dirishi mumkin
+          else
+            echo "Ogohlantirish: 'atto icon.jpg' fayli topilmadi. Ikonkalar generatsiya qilinmadi."
+          fi
           
-          # Sync and install pods
+          # Eng muhim qadam: Veb-resurslarni native loyihaga sinxronlash
           npx cap sync ios
           
-          # Add Camera permissions to Info.plist
+          # iOS loyihasining Info.plist fayliga kerakli ruxsatnomalarni qo'shish
           PLIST="ios/App/App/Info.plist"
           if [ -f "$PLIST" ]; then
             plutil -replace NSCameraUsageDescription -string "ATTO QR kodlarni skanerlash uchun kameraga kirish huquqini talab qiladi" "$PLIST"
             plutil -replace NSPhotoLibraryUsageDescription -string "ATTO QR kodlarni saqlash uchun rasm galereyasiga kirish huquqini talab qiladi" "$PLIST"
             plutil -replace NSPhotoLibraryAddUsageDescription -string "ATTO QR kodlarni saqlash uchun rasm galereyasiga kirish huquqini talab qiladi" "$PLIST"
+          else
+            echo "Xatolik: Info.plist fayli topilmadi!"
+            exit 1
           fi
-          
-          cd ios/App && pod install && cd ../..
 
-      - name: Build unsigned IPA
+      - name: 6. iOS uchun native modullarni o'rnatish (CocoaPods)
+        run: cd ios/App && pod install && cd ../..
+
+      - name: 7. Xcode loyihasini yig'ish va imzosiz IPA yaratish
         run: |
-          # Clean build folder
-          rm -rf ios/App/build
-          
-          # Build the project
+          # Xcode loyihasini tozalash va yig'ish
           xcodebuild clean build -workspace ios/App/App.xcworkspace \
             -scheme App \
             -configuration Release \
             -sdk iphoneos \
             -derivedDataPath ios/App/build \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY="" \
-            AD_HOC_CODE_SIGNING_ALLOWED=YES \
-            COMPILER_INDEX_STORE_ENABLE=NO
-          
-          # Create IPA for TrollStore
+            CODE_SIGNING_ALLOWED=NO
+
+          # TrollStore uchun IPA yaratish
           mkdir -p Payload
           cp -r ios/App/build/Build/Products/Release-iphoneos/App.app Payload/
           zip -r ATTO.ipa Payload
 
-      - uses: actions/upload-artifact@v4
+      - name: 8. Tayyor IPA faylini artefakt sifatida saqlash
+        uses: actions/upload-artifact@v4
         with:
           name: ATTO-ipa
           path: ATTO.ipa
