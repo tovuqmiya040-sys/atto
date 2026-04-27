@@ -25,44 +25,33 @@ jobs:
         env:
           NODE_ENV: production
 
-      - name: 5. Capacitorni sozlash va sinxronlash
+      - name: 5. Capacitor-ni sozlash va iOS platformasini tayyorlash
         run: |
-          # Capacitor iOS platformasini qo'shish (agar mavjud bo'lmasa)
+          # Agar ios papkasi mavjud bo'lmasa, uni qo'shish
           if [ ! -d "ios" ]; then
             npx cap add ios
           fi
           
-          # Ikonka va Splash-skrinlar uchun resurslarni tayyorlash
-          # DIQQAT: Loyihangiz ildizida "atto icon.jpg" fayli borligiga ishonch hosil qiling
-          mkdir -p assets
-          if [ -f "atto icon.jpg" ]; then
-            cp "atto icon.jpg" assets/icon.jpg
-            cp "atto icon.jpg" assets/splash.jpg
-            # npx capacitor-assets generate --ios # Bu qadamni vaqtincha o'chirib turamiz, chunki u ba'zan muammo tug'dirishi mumkin
-          else
-            echo "Ogohlantirish: 'atto icon.jpg' fayli topilmadi. Ikonkalar generatsiya qilinmadi."
-          fi
-          
-          # Eng muhim qadam: Veb-resurslarni native loyihaga sinxronlash
+          # Veb-resurslarni native loyiha bilan sinxronlash
           npx cap sync ios
           
-          # iOS loyihasining Info.plist fayliga kerakli ruxsatnomalarni qo'shish
+          # Info.plist fayliga ruxsatnomalarni yozish
           PLIST="ios/App/App/Info.plist"
           if [ -f "$PLIST" ]; then
             plutil -replace NSCameraUsageDescription -string "ATTO QR kodlarni skanerlash uchun kameraga kirish huquqini talab qiladi" "$PLIST"
             plutil -replace NSPhotoLibraryUsageDescription -string "ATTO QR kodlarni saqlash uchun rasm galereyasiga kirish huquqini talab qiladi" "$PLIST"
             plutil -replace NSPhotoLibraryAddUsageDescription -string "ATTO QR kodlarni saqlash uchun rasm galereyasiga kirish huquqini talab qiladi" "$PLIST"
           else
-            echo "Xatolik: Info.plist fayli topilmadi!"
+            echo "Xatolik: Info.plist fayli ($PLIST) topilmadi!"
             exit 1
           fi
 
       - name: 6. iOS uchun native modullarni o'rnatish (CocoaPods)
-        run: cd ios/App && pod install && cd ../..
+        # Bu qadam `npx cap sync` dan KEYIN ishlashi shart
+        run: cd ios && pod install && cd ..
 
       - name: 7. Xcode loyihasini yig'ish va imzosiz IPA yaratish
         run: |
-          # Xcode loyihasini tozalash va yig'ish
           xcodebuild clean build -workspace ios/App/App.xcworkspace \
             -scheme App \
             -configuration Release \
@@ -70,7 +59,6 @@ jobs:
             -derivedDataPath ios/App/build \
             CODE_SIGNING_ALLOWED=NO
 
-          # TrollStore uchun IPA yaratish
           mkdir -p Payload
           cp -r ios/App/build/Build/Products/Release-iphoneos/App.app Payload/
           zip -r ATTO.ipa Payload
