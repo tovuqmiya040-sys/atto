@@ -25,12 +25,13 @@ jobs:
         env:
           NODE_ENV: production
 
-      - name: 5. Add iOS Platform
-        run: npx cap add ios
-
-      - name: 6. Sync Capacitor and Prepare iOS
+      - name: 5. Add and Sync iOS Platform
         run: |
+          npx cap add ios
           npx cap sync ios
+
+      - name: 6. Set Permissions
+        run: |
           PLIST="ios/App/App/Info.plist"
           if [ -f "$PLIST" ]; then
             plutil -replace NSCameraUsageDescription -string "ATTO requires camera access to scan QR codes" "$PLIST"
@@ -41,8 +42,9 @@ jobs:
             exit 1
           fi
 
-      - name: 7. Build, Verify, and Create IPA
+      - name: 7. Build, Package, and Sign IPA
         run: |
+          # Build the Xcode project
           xcodebuild build -workspace ios/App/App.xcworkspace \
             -scheme App \
             -configuration Release \
@@ -50,14 +52,22 @@ jobs:
             -derivedDataPath ios/App/build \
             CODE_SIGNING_ALLOWED=NO
 
+          # Create the Payload directory
           mkdir -p Payload
+          
+          # Copy the built .app bundle to Payload
           cp -r ios/App/build/Build/Products/Release-iphoneos/App.app Payload/
 
-          # --- DEBUG: List contents of the Payload before zipping --- #
-          echo "--- Listing Payload Contents ---"
-          ls -lR Payload
-          echo "----------------------------------"
+          # --- CRITICAL STEP: Force copy web assets to the .app bundle ---
+          echo "--- Force copying web assets from dist to Payload/App.app/public ---"
+          cp -R dist/. Payload/App.app/public/
 
+          # --- DEBUG: Verify final contents of the Payload before zipping --- #
+          echo "--- Listing Final Payload Contents ---"
+          ls -lR Payload
+          echo "------------------------------------"
+
+          # Create the final IPA file
           zip -r ATTO.ipa Payload
 
       - name: 8. Upload IPA Artifact
