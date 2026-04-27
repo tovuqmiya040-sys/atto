@@ -25,7 +25,10 @@ jobs:
         env:
           NODE_ENV: production
 
-      - name: 5. Sync Capacitor and Prepare iOS
+      - name: 5. Add iOS Platform
+        run: npx cap add ios
+
+      - name: 6. Sync Capacitor and Prepare iOS
         run: |
           # Run sync, which includes 'copy' and 'update' (pod install)
           npx cap sync ios
@@ -41,7 +44,7 @@ jobs:
             exit 1
           fi
 
-      - name: 6. Build and Create IPA
+      - name: 7. Build and Create IPA
         run: |
           # Build WITHOUT 'clean' to prevent deleting the synced web assets
           xcodebuild build -workspace ios/App/App.xcworkspace \
@@ -58,7 +61,7 @@ jobs:
           # Zip to create the .ipa file
           zip -r ATTO.ipa Payload
 
-      - name: 7. Upload IPA Artifact
+      - name: 8. Upload IPA Artifact
         uses: actions/upload-artifact@v4
         with:
           name: ATTO-ipa
