@@ -1,7 +1,8 @@
+
 import { useEffect, useState } from "react";
 import { Loader2, CameraOff, ScanLine } from "lucide-react";
 import { toast } from "sonner";
-import { BarcodeScanner } from "@capacitor/barcode-scanner";
+import { BarcodeScanner } from "../lib/barcode-scanner";
 
 type QrScannerProps = {
   onResult: (text: string) => void;
