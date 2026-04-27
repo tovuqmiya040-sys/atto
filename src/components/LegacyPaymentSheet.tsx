@@ -5,7 +5,7 @@ import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { useCards } from "@/context/cards-context";
 import { useRoutes } from "@/context/routes-context";
-import { QrScannerPage } from "./QrScannerPage"; // Changed
+import { QrScannerPage } from "./QrScannerPage";
 import { toast } from "sonner";
 import {
   parseAttoQr,
@@ -21,14 +21,13 @@ type Props = {
 };
 
 const FARE = 1700;
-type Stage = "confirm" | "success"; // "scan" stage is removed
+type Stage = "confirm" | "success";
 
 export function LegacyPaymentSheet({ open, onOpenChange }: Props) {
   const { cards, activeIndex, chargeActive, addTrip } = useCards();
   const { defaultRoute, findRouteForQr } = useRoutes();
   const card = cards[activeIndex] ?? cards[0];
 
-  // Internal state to decide when to show the full-page scanner
   const [showScanner, setShowScanner] = useState(false);
 
   const [stage, setStage] = useState<Stage>("confirm");
@@ -38,7 +37,6 @@ export function LegacyPaymentSheet({ open, onOpenChange }: Props) {
   const [receipt, setReceipt] = useState("");
   const [paidAt, setPaidAt] = useState<Date | null>(null);
 
-  // This effect will trigger the full-page scanner when the sheet is opened
   useEffect(() => {
     if (open) {
       setShowScanner(true);
@@ -46,12 +44,12 @@ export function LegacyPaymentSheet({ open, onOpenChange }: Props) {
   }, [open]);
 
   const handleScan = (text: string) => {
-    setShowScanner(false); // Close the scanner page
+    setShowScanner(false);
 
     const plate = parseAttoQr(text);
     if (!plate) {
       toast.error("Yaroqsiz QR kod");
-      onOpenChange(false); // Close the sheet as well
+      onOpenChange(false);
       return;
     }
 
@@ -64,11 +62,9 @@ export function LegacyPaymentSheet({ open, onOpenChange }: Props) {
         : String(Math.floor(Math.random() * 90) + 10));
     setRoute(r);
 
-    // Reset state for the new confirmation
     setStage("confirm");
     setReceipt("");
     setPaidAt(null);
-    // The sheet is already open, just need to show the confirm stage
   };
 
   const handlePay = async () => {
@@ -94,22 +90,21 @@ export function LegacyPaymentSheet({ open, onOpenChange }: Props) {
 
   const handleCloseScanner = () => {
     setShowScanner(false);
-    onOpenChange(false); // Close the sheet if scanner is cancelled
+    onOpenChange(false);
   };
-  
+
   const handleCloseSheet = (isOpen: boolean) => {
     if (!isOpen) {
-        // Reset all states when sheet is intentionally closed
-        setShowScanner(false);
-        setStage("confirm");
-        setBusPlate("");
-        setQrPayload("");
-        setRoute("");
-        setReceipt("");
-        setPaidAt(null);
+      setShowScanner(false);
+      setStage("confirm");
+      setBusPlate("");
+      setQrPayload("");
+      setRoute("");
+      setReceipt("");
+      setPaidAt(null);
     }
     onOpenChange(isOpen);
-  }
+  };
 
   return (
     <>
@@ -124,30 +119,19 @@ export function LegacyPaymentSheet({ open, onOpenChange }: Props) {
 
           {stage === "confirm" && (
             <div className="px-5 pt-5">
-              {/* ATTO virtual card */}
               <div className="relative overflow-hidden rounded-2xl card-atto-bg p-6 text-white shadow-xl aspect-[1.5/1]">
-                {/* Pattern overlay */}
                 <div className="absolute inset-0 card-pattern-atto pointer-events-none" />
-
                 <div className="relative z-10 flex h-full flex-col justify-between">
                   <div className="flex items-start justify-between">
                     <div>
-                      <div className="text-lg font-medium">
-                        {card.label}
-                      </div>
+                      <div className="text-lg font-medium">{card.label}</div>
                       <div className="mt-4 flex items-baseline gap-2">
-                        <span className="text-5xl font-bold tracking-tight">
-                          {card.balance}
-                        </span>
-                        <span className="text-sm opacity-80 uppercase">
-                          uzs
-                        </span>
+                        <span className="text-5xl font-bold tracking-tight">{card.balance}</span>
+                        <span className="text-sm opacity-80 uppercase">uzs</span>
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-xl font-bold tracking-wide">
-                        ATTO
-                      </div>
+                      <div className="text-xl font-bold tracking-wide">ATTO</div>
                       <div
                         className="mt-1 text-[11px] font-extrabold tracking-[0.2em]"
                         style={{ color: "#22c55e" }}
@@ -162,12 +146,8 @@ export function LegacyPaymentSheet({ open, onOpenChange }: Props) {
                 </div>
               </div>
 
-              <div className="mt-6 text-center text-sm text-muted-foreground">
-                To'lov
-              </div>
-              <div className="mt-1 text-center text-4xl font-bold tracking-tight">
-                {formatNum(FARE)} UZS
-              </div>
+              <div className="mt-6 text-center text-sm text-muted-foreground">To'lov</div>
+              <div className="mt-1 text-center text-4xl font-bold tracking-tight">{formatNum(FARE)} UZS</div>
 
               <div className="mt-8 space-y-0">
                 <div className="flex items-center justify-between border-b border-border/60 py-4">
@@ -201,9 +181,7 @@ export function LegacyPaymentSheet({ open, onOpenChange }: Props) {
           {stage === "success" && (
             <div className="px-5 pt-5 text-center">
               <div className="relative flex items-start justify-center pb-1">
-                <div className="text-sm font-medium text-success">
-                  Sayr uchun to'lovingiz muvaffaqiyatli amalga oshirildi
-                </div>
+                <div className="text-sm font-medium text-success">Sayr uchun to'lovingiz muvaffaqiyatli amalga oshirildi</div>
                 <button
                   onClick={() => onOpenChange(false)}
                   aria-label="Yopish"
@@ -213,9 +191,7 @@ export function LegacyPaymentSheet({ open, onOpenChange }: Props) {
                 </button>
               </div>
               <div className="mt-4 text-sm text-muted-foreground">To'lov vaqti</div>
-              <div className="mt-1 text-2xl font-bold tracking-tight">
-                {paidAt ? formatPaidAt(paidAt) : ""}
-              </div>
+              <div className="mt-1 text-2xl font-bold tracking-tight">{paidAt ? formatPaidAt(paidAt) : ""}</div>
 
               <div className="mt-6 flex justify-center">
                 <div className="rounded-3xl bg-white p-4">
@@ -237,10 +213,7 @@ export function LegacyPaymentSheet({ open, onOpenChange }: Props) {
               <div className="mt-6 space-y-0 text-left">
                 <Row label="Chek raqami" value={receipt} />
                 <Row label="To'langan" value={`${formatNum(FARE)} UZS`} />
-                <Row
-                  label="Sayohat sanasi"
-                  value={paidAt ? formatTravelDate(paidAt) : ""}
-                />
+                <Row label="Sayohat sanasi" value={paidAt ? formatTravelDate(paidAt) : ""} />
                 <Row label="Yo'nalish" value={`Marshrut № ${route}`} />
                 <Row label="Dav. raqami" value={busPlate} />
               </div>
