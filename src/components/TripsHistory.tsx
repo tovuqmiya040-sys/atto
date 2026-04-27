@@ -1,10 +1,5 @@
 import { useMemo, useState } from "react";
-import {
-  CreditCard,
-  ChevronRight,
-  ChevronLeft,
-  ArrowRight,
-} from "lucide-react";
+import { ArrowRight, ChevronDown } from "lucide-react";
 import { useCards, type TripEntry, type TopupEntry } from "@/context/cards-context";
 import {
   formatHM,
@@ -13,7 +8,8 @@ import {
 } from "@/lib/atto";
 import { TopupDetailSheet } from "@/components/TopupDetailSheet";
 import { TripDetailSheet } from "@/components/TripDetailSheet";
-import { Calendar } from "@/components/ui/calendar";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 
 const dayLabel = (d: Date): string => {
@@ -22,13 +18,15 @@ const dayLabel = (d: Date): string => {
   yesterday.setDate(yesterday.getDate() - 1);
   if (formatISODate(d) === formatISODate(today)) return "Bugun";
   if (formatISODate(d) === formatISODate(yesterday)) return "Kecha";
-  return d.toLocaleDateString("uz-UZ", {
-    day: "numeric",
-    month: "long",
-  });
+  return d.toLocaleDateString("uz-UZ", { day: "numeric", month: "long" });
 };
 
 type TripsTab = "trips" | "topups";
+
+const MONTHS = [
+  "Yanvar", "Fevral", "Mart", "Aprel", "May", "Iyun",
+  "Iyul", "Avgust", "Sentyabr", "Oktyabr", "Noyabr", "Dekabr"
+];
 
 export function TripsHistory() {
   const [tab, setTab] = useState<TripsTab>("trips");
@@ -36,48 +34,34 @@ export function TripsHistory() {
   const [replay, setReplay] = useState<TripEntry | null>(null);
   const [topupDetail, setTopupDetail] = useState<TopupEntry | null>(null);
 
-  const [selectedDay, setSelectedDay] = useState<Date | undefined>(undefined);
-  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const now = new Date();
+  const [currentMonth, setCurrentMonth] = useState(now.getMonth());
+  const [currentYear, setCurrentYear] = useState(now.getFullYear());
 
   const activeData = tab === "trips" ? trips : topups;
 
-  const daysWithActivity = useMemo(() => {
-    const dateStrings = new Set(
-      activeData.map((item) => formatISODate(new Date(item.at || item.paidAt))),
-    );
-    return (date: Date) => dateStrings.has(formatISODate(date));
-  }, [activeData]);
-
-  const { firstYear, lastYear } = useMemo(() => {
+  const { years, yearMonths } = useMemo(() => {
+    const yearSet = new Set<number>();
+    const monthSet = new Set<string>(); // YYYY-MM
     if (activeData.length === 0) {
-      const currentYear = new Date().getFullYear();
-      return { firstYear: currentYear, lastYear: currentYear };
+        const year = new Date().getFullYear();
+        yearSet.add(year);
+    } else {
+        activeData.forEach(item => {
+            const d = new Date(item.at || item.paidAt);
+            yearSet.add(d.getFullYear());
+            monthSet.add(`${d.getFullYear()}-${d.getMonth()}`);
+        });
     }
-    const years = activeData.map((item) =>
-      new Date(item.at || item.paidAt).getFullYear(),
-    );
-    return {
-      firstYear: Math.min(...years),
-      lastYear: Math.max(...years),
-    };
+    return { years: Array.from(yearSet).sort((a,b) => b-a), yearMonths: monthSet };
   }, [activeData]);
 
   const displayedData = useMemo(() => {
-    if (selectedDay) {
-      return activeData.filter(
-        (item) =>
-          formatISODate(new Date(item.at || item.paidAt)) ===
-          formatISODate(selectedDay),
-      );
-    }
-    return activeData.filter((item) => {
+    return activeData.filter(item => {
       const itemDate = new Date(item.at || item.paidAt);
-      return (
-        itemDate.getFullYear() === currentMonth.getFullYear() &&
-        itemDate.getMonth() === currentMonth.getMonth()
-      );
+      return itemDate.getFullYear() === currentYear && itemDate.getMonth() === currentMonth;
     });
-  }, [activeData, selectedDay, currentMonth]);
+  }, [activeData, currentYear, currentMonth]);
 
   const grouped = useMemo(() => {
     const map = new Map<string, { label: string; items: (TripEntry | TopupEntry)[] }>();
@@ -89,7 +73,7 @@ export function TripsHistory() {
       bucket.items.push(t);
       map.set(key, bucket);
     }
-    return Array.from(map.entries()).sort(([a], [b]) => (a < b ? 1 : -1));
+    return Array.from(map.entries()).sort(([a, b]) => (a < b ? 1 : -1));
   }, [displayedData]);
 
   return (
@@ -99,87 +83,80 @@ export function TripsHistory() {
         <TabButton isActive={tab === "topups"} onClick={() => setTab("topups")}>Hisobni to'ldirish</TabButton>
       </div>
 
-      <div className="mt-4 rounded-xl bg-surface/50 p-0.5">
-        <Calendar
-          mode="single"
-          selected={selectedDay}
-          onSelect={(day) => {
-            if (selectedDay && day && formatISODate(selectedDay) === formatISODate(day)) {
-              setSelectedDay(undefined);
-            } else {
-              setSelectedDay(day);
-            }
-          }}
-          month={currentMonth}
-          onMonthChange={setCurrentMonth}
-          modifiers={{ hasActivity: daysWithActivity }}
-          modifiersClassNames={{ hasActivity: "has-activity" }}
-          captionLayout="dropdown-buttons"
-          fromYear={firstYear}
-          toYear={lastYear}
-        />
+      <div className="mt-6 flex items-center justify-between gap-3">
+          <Popover>
+            <PopoverTrigger asChild>
+                <Button variant="ghost" className="text-2xl font-bold pl-2 pr-2">
+                    {`${MONTHS[currentMonth]} ${currentYear}`}
+                    <ChevronDown className="ml-2 h-6 w-6 text-muted-foreground" />
+                </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-2">
+                <div className="flex gap-2">
+                    <Select value={String(currentMonth)} onValueChange={(v) => setCurrentMonth(Number(v))}>
+                        <SelectTrigger className="h-10 w-32 rounded-lg bg-surface/70">
+                            <SelectValue placeholder="Oy" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {MONTHS.map((m, i) => (
+                                <SelectItem key={m} value={String(i)} disabled={!yearMonths.has(`${currentYear}-${i}`)}>
+                                   {m}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <Select value={String(currentYear)} onValueChange={(v) => setCurrentYear(Number(v))}>
+                         <SelectTrigger className="h-10 w-24 rounded-lg bg-surface/70">
+                            <SelectValue placeholder="Yil" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {years.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
+                </div>
+            </PopoverContent>
+        </Popover>
       </div>
       
       <div className="my-5 h-px bg-border/60" />
 
-      {selectedDay && (
-         <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-xl font-bold tracking-tight">{dayLabel(selectedDay)}</h2>
-            <Button variant="ghost" size="sm" onClick={() => setSelectedDay(undefined)} className="text-primary">
-              Barchasini ko'rsatish
-            </Button>
-        </div>
-      )}
-
       {grouped.length === 0 ? (
         <div className="py-20 text-center text-sm text-muted-foreground">
-          {tab === 'trips' ? 'Belgilangan davr uchun sayrlar topilmadi.' : 'Belgilangan davr uchun to'ldirishlar topilmadi.'}
+          {tab === 'trips' ? 'Tanlangan oy uchun sayrlar topilmadi.' : 'Tanlangan oy uchun to\'ldirishlar topilmadi.'}
         </div>
       ) : (
         <div className="space-y-6">
             {grouped.map(([key, bucket]) => (
                 <section key={key}>
-                {!selectedDay && <h3 className="mb-3 text-3xl font-bold tracking-tight">{bucket.label}</h3>}
-                <ul className="divide-y divide-border/60">
-                    {bucket.items.map((item) => (
-                    <li key={item.id}>
-                        {tab === "trips" ? (
-                            <TripRow item={item as TripEntry} onOpen={setReplay} />
-                        ) : (
-                            <TopupRow item={item as TopupEntry} onOpen={setTopupDetail} />
-                        )}
-                    </li>
-                    ))}
-                </ul>
+                    <h3 className="mb-3 text-3xl font-bold tracking-tight">{bucket.label}</h3>
+                    <ul className="divide-y divide-border/60">
+                        {bucket.items.map(item => (
+                        <li key={item.id}>
+                            {tab === "trips" ? (
+                                <TripRow item={item as TripEntry} onOpen={setReplay} />
+                            ) : (
+                                <TopupRow item={item as TopupEntry} onOpen={setTopupDetail} />
+                            )}
+                        </li>
+                        ))}
+                    </ul>
                 </section>
             ))}
         </div>
       )}
 
-      <TripDetailSheet
-        trip={replay}
-        open={!!replay}
-        onOpenChange={(v) => !v && setReplay(null)}
-      />
-      <TopupDetailSheet
-        entry={topupDetail}
-        open={!!topupDetail}
-        onOpenChange={(v) => !v && setTopupDetail(null)}
-      />
+      <TripDetailSheet trip={replay} open={!!replay} onOpenChange={v => !v && setReplay(null)} />
+      <TopupDetailSheet entry={topupDetail} open={!!topupDetail} onOpenChange={v => !v && setTopupDetail(null)} />
     </div>
   );
 }
-
-// Helper components for rows and tabs to keep the main component clean
 
 function TabButton({ isActive, onClick, children }: { isActive: boolean, onClick: () => void, children: React.ReactNode }) {
     return (
         <button
           onClick={onClick}
           className={`rounded-xl py-3 text-sm font-semibold transition-colors ${
-            isActive
-              ? "bg-surface-elevated text-foreground shadow-sm"
-              : "text-muted-foreground"
+            isActive ? "bg-surface-elevated text-foreground shadow-sm" : "text-muted-foreground"
           }`}
         >
           {children}
@@ -212,7 +189,7 @@ function TopupRow({ item, onOpen }: { item: TopupEntry; onOpen: (t: TopupEntry) 
     return (
         <button onClick={() => onOpen(item)} className="flex w-full items-center gap-4 py-4 text-left">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
-                <ChevronLeft className="h-5 w-5 -rotate-90" />
+                <ChevronDown className="h-5 w-5 rotate-90" />
             </div>
             <div className="flex-1">
                 <div className="text-lg font-semibold leading-tight capitalize">{item.method}</div>

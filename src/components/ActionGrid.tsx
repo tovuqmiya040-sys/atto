@@ -63,9 +63,9 @@ function getIconWrapClasses(variant: Action["variant"]) {
     case "blue":
       return "bg-white text-[#2563eb]";
     case "green":
-      return "text-white"; // ramkasiz, oq ikon
+      return "text-white"; // no frame, white icon
     default:
-      return "text-white"; // ramkasiz, oq ikon
+      return "text-white"; // no frame, white icon
   }
 }
 
@@ -94,9 +94,10 @@ export function ActionGrid() {
             <button
               key={a.id}
               onClick={() => handleClick(a.id)}
+              // Reverted to justify-between and adjusted padding to move content slightly down
               className={`flex ${
                 isLarge ? "aspect-[1/0.85]" : "aspect-[1/0.65]"
-              } flex-col items-start justify-between rounded-2xl p-3 pb-5 text-left shadow-md shadow-black/20 transition-transform active:scale-[0.97] ${getClasses(
+              } flex-col items-start justify-between rounded-2xl p-4 pt-5 text-left shadow-md shadow-black/20 transition-transform active:scale-[0.97] ${getClasses(
                 a.variant,
               )}`}
             >

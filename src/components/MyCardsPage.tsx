@@ -153,7 +153,6 @@ export function MyCardsPage({ open, onClose, onOpenHistory }: Props) {
                        <div className="flex items-start justify-between">
                         <div>
                           <div className="text-base font-medium opacity-90">{c.label}</div>
-                          {/* This margin is reduced from mt-3 to mt-2 */}
                           <div className="mt-2 flex items-baseline gap-2">
                             <span className="text-4xl xs:text-5xl font-bold tracking-tight">{hidden ? "•••" : c.balance}</span>
                             <span className="text-xs opacity-80 uppercase">uzs</span>
@@ -171,7 +170,7 @@ export function MyCardsPage({ open, onClose, onOpenHistory }: Props) {
                           </div>
                         </div>
                       </div>
-                      <div className="font-mono text-[0.95rem] tracking-[0.12em] text-white/70">{hidden ? "•••• •••• •••• ••••" : c.number}</div>
+                      <div className="font-mono text-[0.95rem] tracking-[0.12em] text-white/70 mb-1">{hidden ? "•••• •••• •••• ••••" : c.number}</div>
                     </div>
                   </div>
                 </div>
@@ -189,8 +188,6 @@ export function MyCardsPage({ open, onClose, onOpenHistory }: Props) {
         </div>
       </div>
 
-      {/* ====== SHEETS AND DIALOGS (WITH CORRECT Z-INDEX) ====== */}
-      
       <Sheet open={!!actionsCardId} onOpenChange={(v) => !v && setActionsCardId(null)}>
         <SheetContent side="bottom" className="z-[200] rounded-t-3xl border-border bg-surface px-0 pb-[max(1.5rem,env(safe-area-inset-bottom))] [&>button.absolute]:hidden">
           <SheetHeader className="px-5 text-left">
@@ -252,7 +249,7 @@ export function MyCardsPage({ open, onClose, onOpenHistory }: Props) {
               const v = newName.trim();
               if (!v) { toast.error("Nom kiriting"); return; }
               const last4 = String(Math.floor(1000 + Math.random() * 9000));
-              await addCard({ label: v, number: `9987 2200 0025 ${last4}`, balance: "0" });
+              await addCard({ label: v, number: `9987 2200 0025 ${last4}`, balance: "0", type: 'virtual' });
               toast.success("Karta qo'shildi");
               setAddOpen(false);
             }}>Qo'shish</Button>
