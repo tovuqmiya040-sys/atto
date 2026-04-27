@@ -12,7 +12,6 @@ import {
 import type { LucideIcon } from "lucide-react";
 
 import { SettingsSheet } from "@/components/SettingsSheet";
-import { MyCardsSheet } from "@/components/MyCardsSheet";
 import { TransfersSheet } from "@/components/TransfersSheet";
 import {
   TerminalsSheet,
@@ -21,7 +20,6 @@ import {
   ContactSheet,
 } from "@/components/MenuExtraSheets";
 import { TariffSheet } from "@/components/ExtraSheets";
-import { useUser } from "@/context/user-context";
 
 type ItemId =
   | "cards"
@@ -46,30 +44,24 @@ const ITEMS: Item[] = [
   { id: "contact", label: "Biz bilan bog'laning", icon: MessageCircle },
 ];
 
-/**
- * BottomNav'ning "Menyu" tabi — ATTO ilovasidagi katta plitkali menyu.
- * "Sozlamalar" plitkasi — fake balans boshqaruvi va reset uchun bizning
- * sheetni ochadi. Qolganlari "vaqtinchalik mavjud emas".
- */
 export function MainMenuPage({
-  onOpenHistory,
+  onOpenMyCards, // Changed from onOpenHistory
 }: {
-  onOpenHistory?: () => void;
+  onOpenMyCards?: () => void;
+  onOpenHistory?: () => void; // Keep for compatibility if needed elsewhere
 }) {
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [cardsOpen, setCardsOpen] = useState(false);
   const [transfersOpen, setTransfersOpen] = useState(false);
   const [terminalsOpen, setTerminalsOpen] = useState(false);
   const [smsOpen, setSmsOpen] = useState(false);
   const [faqOpen, setFaqOpen] = useState(false);
   const [tariffOpen, setTariffOpen] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
-  const { displayName } = useUser();
 
   const handleClick = (item: Item) => {
     switch (item.id) {
       case "cards":
-        setCardsOpen(true);
+        onOpenMyCards?.(); // Use the passed function
         return;
       case "transfers":
         setTransfersOpen(true);
@@ -123,11 +115,6 @@ export function MainMenuPage({
       </div>
 
       <SettingsSheet open={settingsOpen} onOpenChange={setSettingsOpen} />
-      <MyCardsSheet
-        open={cardsOpen}
-        onOpenChange={setCardsOpen}
-        onOpenHistory={onOpenHistory}
-      />
       <TransfersSheet open={transfersOpen} onOpenChange={setTransfersOpen} />
       <TerminalsSheet open={terminalsOpen} onOpenChange={setTerminalsOpen} />
       <SmsNotificationSheet open={smsOpen} onOpenChange={setSmsOpen} />

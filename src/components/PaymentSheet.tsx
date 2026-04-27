@@ -57,7 +57,6 @@ export function PaymentSheet({
   const [paidAt, setPaidAt] = useState<Date | null>(null);
   const [paidAmount, setPaidAmount] = useState<number>(FARE);
 
-  // Long-press on X — open route editor; tap — close.
   const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const longPressed = useRef(false);
 
@@ -84,11 +83,9 @@ export function PaymentSheet({
     onOpenChange(false);
   };
 
-  // Reset / initialize when opening
   useEffect(() => {
     if (!open) return;
     if (replayTrip) {
-      // Enter success stage with historical data — no live clock
       setStage("success");
       setBusPlate(replayTrip.busPlate);
       setQrPayload(replayTrip.qrPayload);
@@ -114,7 +111,6 @@ export function PaymentSheet({
   }, [open, replayTrip]);
 
   const handleScanResult = (text: string) => {
-    // Muvaffaqiyatli skanerlashda vibratsiya (iOS da biroz cheklangan bo'lishi mumkin)
     try {
       if (window.navigator.vibrate) {
         window.navigator.vibrate(100);
@@ -128,7 +124,6 @@ export function PaymentSheet({
     }
     setBusPlate(plate);
     setQrPayload(text);
-    // Resolve route: 1) saved plate→route mapping, 2) header default chip, 3) random fallback
     const mapped = findRouteForQr(text);
     const r =
       mapped ??
@@ -151,6 +146,12 @@ export function PaymentSheet({
   };
 
   const handlePay = async () => {
+    // THIS IS THE NEW LOGIC
+    if (card && card.blocked) {
+      toast.error("Karta bloklangan. Iltimos, avval kartani blokdan oching.");
+      return;
+    }
+
     const ok = await chargeActive(FARE);
     if (!ok) {
       toast.error("Balans yetarli emas");
@@ -195,7 +196,6 @@ export function PaymentSheet({
 
         {stage === "scan" && (
           <div className="flex flex-col px-4 pt-3">
-            {/* Mode toggle */}
             <div className="mx-auto mt-2 flex w-full items-center gap-1 rounded-2xl bg-surface-elevated p-1.5 shadow-inner">
               <button
                 onClick={() => setMode("avtobus")}
@@ -233,7 +233,6 @@ export function PaymentSheet({
               />
             </div>
 
-            {/* Flash button */}
             <div className="mt-4 flex items-center justify-center">
               <button
                 onClick={() => {
@@ -253,7 +252,6 @@ export function PaymentSheet({
               </button>
             </div>
 
-            {/* Selected card chip */}
             <div className="mt-5 rounded-full bg-surface-elevated/70 p-2">
               <button
                 onClick={() => setPickerOpen((v) => !v)}
@@ -315,7 +313,6 @@ export function PaymentSheet({
               )}
             </div>
 
-            {/* Bottom actions */}
             <div className="mt-4 grid grid-cols-2 gap-3">
               <Button
                 variant="ghost"
@@ -338,7 +335,6 @@ export function PaymentSheet({
 
         {stage === "confirm" && (
           <div className="flex flex-col px-5 pt-5">
-            {/* Top bar — ATTO title, X: tap=close, long-press=edit route */}
             <div className="relative flex items-center justify-center pb-4">
               <div className="text-base font-black tracking-tight">ATTO</div>
 
@@ -357,11 +353,9 @@ export function PaymentSheet({
               </button>
             </div>
 
-            {/* Mini card */}
             <div
               className="relative overflow-hidden rounded-2xl card-atto-bg p-4 text-white shadow-xl aspect-[1.8/1]"
             >
-              {/* Pattern overlay */}
               <div className="absolute inset-0 card-pattern-atto pointer-events-none" />
 
               <div className="relative z-10 flex h-full flex-col justify-between">
@@ -375,9 +369,9 @@ export function PaymentSheet({
                     </div>
                     <div
                       className="text-[8px] font-black tracking-[0.2em]"
-                      style={{ color: "#22c55e" }}
+                      style={{ color: card.blocked ? "#ef4444" : "#22c55e" }}
                     >
-                      VIRTUAL
+                      {card.blocked ? "BLOKLANGAN" : "VIRTUAL"}
                     </div>
                   </div>
                 </div>
@@ -407,7 +401,6 @@ export function PaymentSheet({
               </div>
             </div>
 
-            {/* Card switcher dots */}
             {cards.length > 1 && (
               <div className="mt-3 flex items-center justify-center gap-1.5">
                 {cards.map((c, i) => (
@@ -425,7 +418,6 @@ export function PaymentSheet({
               </div>
             )}
 
-            {/* Header */}
             <div className="mt-6 flex items-center justify-center">
               <div className="text-sm text-muted-foreground">To'lov</div>
             </div>
@@ -433,7 +425,6 @@ export function PaymentSheet({
               {formatNum(FARE)} UZS
             </div>
 
-            {/* Rows */}
             <div className="mt-8 space-y-0">
               <div className="flex items-center justify-between border-b border-border/60 py-4">
                 <span className="text-muted-foreground">Yo'nalish</span>
@@ -479,7 +470,6 @@ export function PaymentSheet({
               </div>
             </div>
 
-            {/* Actions */}
             <div className="mt-10 space-y-3">
               <Button
                 onClick={handlePay}

@@ -18,7 +18,7 @@ import {
 import { toast } from "sonner";
 import { SecuritySheet } from "@/components/SecuritySheet";
 import { PersonalInfoSheet } from "@/components/PersonalInfoSheet";
-import { MyCardsSheet } from "@/components/MyCardsSheet";
+import { MyCardsPage } from "@/components/MyCardsPage"; // Changed from MyCardsSheet
 import { ActiveDevicesSheet, AboutAppSheet } from "@/components/MenuExtraSheets";
 
 type MenuSheetProps = {
@@ -28,22 +28,19 @@ type MenuSheetProps = {
 
 const UNAVAILABLE = "Bu bo'lim vaqtinchalik mavjud emas";
 
-/**
- * ATTO Home tepasidagi 3-chiziq tugmasi bosilganda ochiladigan asosiy
- * "Menyu" sheeti.
- */
 export function MenuSheet({ open, onOpenChange }: MenuSheetProps) {
   const [securityOpen, setSecurityOpen] = useState(false);
   const [personalOpen, setPersonalOpen] = useState(false);
-  const [cardsOpen, setCardsOpen] = useState(false);
+  const [cardsOpen, setCardsOpen] = useState(false); // This will now control MyCardsPage
   const [devicesOpen, setDevicesOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
 
   const notAvailable = () => toast.error(UNAVAILABLE);
 
-  const openWith = (setter: (v: boolean) => void) => {
-    onOpenChange(false);
-    setTimeout(() => setter(true), 200);
+  // This function will now open our full-screen pages
+  const openPage = (setter: (v: boolean) => void) => {
+    onOpenChange(false); // Close the menu sheet first
+    setTimeout(() => setter(true), 200); // Then open the new page
   };
 
   return (
@@ -72,7 +69,7 @@ export function MenuSheet({ open, onOpenChange }: MenuSheetProps) {
           {/* Top tiles: kartalarim + til */}
           <div className="mt-5 grid grid-cols-2 gap-3">
             <button
-              onClick={() => openWith(setCardsOpen)}
+              onClick={() => openPage(setCardsOpen)} // Use the new function to open the page
               className="relative h-32 overflow-hidden rounded-3xl bg-surface-elevated p-4 text-left transition-transform active:scale-[0.98]"
             >
               <div className="absolute right-3 top-3 text-muted-foreground">
@@ -116,12 +113,12 @@ export function MenuSheet({ open, onOpenChange }: MenuSheetProps) {
             <ListRow
               icon={<User className="h-5 w-5" />}
               label="Shaxsiy ma'lumotlar"
-              onClick={() => openWith(setPersonalOpen)}
+              onClick={() => openPage(setPersonalOpen)}
             />
             <ListRow
               icon={<Lock className="h-5 w-5" />}
               label="Xavfsizlik"
-              onClick={() => openWith(setSecurityOpen)}
+              onClick={() => openPage(setSecurityOpen)}
             />
             <ListRow
               icon={<Palette className="h-5 w-5" />}
@@ -134,12 +131,12 @@ export function MenuSheet({ open, onOpenChange }: MenuSheetProps) {
             <ListRow
               icon={<Smartphone className="h-5 w-5" />}
               label="Faol qurilmalar"
-              onClick={() => openWith(setDevicesOpen)}
+              onClick={() => openPage(setDevicesOpen)}
             />
             <ListRow
               icon={<Info className="h-5 w-5" />}
               label="Ilova haqida"
-              onClick={() => openWith(setAboutOpen)}
+              onClick={() => openPage(setAboutOpen)}
             />
           </div>
 
@@ -159,24 +156,18 @@ export function MenuSheet({ open, onOpenChange }: MenuSheetProps) {
         </SheetContent>
       </Sheet>
 
+      {/* These sheets remain as they are */}
       <SecuritySheet
         open={securityOpen}
         onOpenChange={setSecurityOpen}
         onBack={() => onOpenChange(true)}
       />
-
       <PersonalInfoSheet
         open={personalOpen}
         onOpenChange={setPersonalOpen}
         onBack={() => onOpenChange(true)}
       />
-
-      <MyCardsSheet
-        open={cardsOpen}
-        onOpenChange={setCardsOpen}
-        onBack={() => onOpenChange(true)}
-      />
-      <ActiveDevicesSheet
+       <ActiveDevicesSheet
         open={devicesOpen}
         onOpenChange={setDevicesOpen}
         onBack={() => onOpenChange(true)}
@@ -186,6 +177,10 @@ export function MenuSheet({ open, onOpenChange }: MenuSheetProps) {
         onOpenChange={setAboutOpen}
         onBack={() => onOpenChange(true)}
       />
+
+      {/* Render the new MyCardsPage here */}
+      <MyCardsPage open={cardsOpen} onClose={() => setCardsOpen(false)} />
+
     </>
   );
 }

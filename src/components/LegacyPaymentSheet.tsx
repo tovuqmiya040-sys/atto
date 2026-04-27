@@ -119,29 +119,45 @@ export function LegacyPaymentSheet({ open, onOpenChange }: Props) {
 
           {stage === "confirm" && (
             <div className="px-5 pt-5">
-              <div className="relative overflow-hidden rounded-2xl card-atto-bg p-6 text-white shadow-xl aspect-[1.5/1]">
+              {/* ATTO virtual card - UPDATED LAYOUT */}
+              <div className="relative overflow-hidden rounded-2xl card-atto-bg p-5 text-white shadow-xl aspect-[1.58/1]">
                 <div className="absolute inset-0 card-pattern-atto pointer-events-none" />
-                <div className="relative z-10 flex h-full flex-col justify-between">
+
+                <div className="relative z-10 flex h-full flex-col">
+                  {/* Top part */}
                   <div className="flex items-start justify-between">
-                    <div>
-                      <div className="text-lg font-medium">{card.label}</div>
-                      <div className="mt-4 flex items-baseline gap-2">
-                        <span className="text-5xl font-bold tracking-tight">{card.balance}</span>
-                        <span className="text-sm opacity-80 uppercase">uzs</span>
-                      </div>
+                    <div className="text-lg font-medium">
+                      {card.label}
                     </div>
                     <div className="text-right">
                       <div className="text-xl font-bold tracking-wide">ATTO</div>
                       <div
-                        className="mt-1 text-[11px] font-extrabold tracking-[0.2em]"
+                        className="mt-1 text-[10px] font-extrabold tracking-[0.2em] opacity-90"
                         style={{ color: "#22c55e" }}
                       >
                         VIRTUAL
                       </div>
                     </div>
                   </div>
-                  <div className="font-mono text-sm tracking-widest text-white/25" style={{ wordBreak: 'break-all' }}>
-                    {card.number}
+
+                  {/* Middle: Card number (raised and larger) */}
+                  <div className="flex-1 flex items-center justify-center">
+                     <div className="font-mono text-lg tracking-wider text-white/60" style={{ wordBreak: 'break-all' }}>
+                        {card.number}
+                    </div>
+                  </div>
+
+                  {/* Bottom: Balance (smaller) */}
+                  <div className="text-left">
+                    <div className="text-xs uppercase text-white/50">Balans</div>
+                     <div className="flex items-baseline gap-2">
+                        <span className="text-3xl font-bold tracking-tight">
+                          {card.balance}
+                        </span>
+                        <span className="text-sm font-medium opacity-80">
+                          UZS
+                        </span>
+                      </div>
                   </div>
                 </div>
               </div>
