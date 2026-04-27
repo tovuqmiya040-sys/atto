@@ -27,28 +27,23 @@ jobs:
 
       - name: 5. Capacitor-ni sozlash va iOS platformasini tayyorlash
         run: |
-          # Agar ios papkasi mavjud bo'lmasa, uni qo'shish
           if [ ! -d "ios" ]; then
             npx cap add ios
           fi
           
-          # Veb-resurslarni native loyiha bilan sinxronlash
           npx cap sync ios
           
-          # Info.plist fayliga ruxsatnomalarni yozish
           PLIST="ios/App/App/Info.plist"
           if [ -f "$PLIST" ]; then
             plutil -replace NSCameraUsageDescription -string "ATTO QR kodlarni skanerlash uchun kameraga kirish huquqini talab qiladi" "$PLIST"
-            plutil -replace NSPhotoLibraryUsageDescription -string "ATTO QR kodlarni saqlash uchun rasm galereyasiga kirish huquqini talab qiladi" "$PLIST"
-            plutil -replace NSPhotoLibraryAddUsageDescription -string "ATTO QR kodlarni saqlash uchun rasm galereyasiga kirish huquqini talab qiladi" "$PLIST"
           else
             echo "Xatolik: Info.plist fayli ($PLIST) topilmadi!"
             exit 1
           fi
 
       - name: 6. iOS uchun native modullarni o'rnatish (CocoaPods)
-        # Bu qadam `npx cap sync` dan KEYIN ishlashi shart
-        run: cd ios && pod install && cd ..
+        # Podfile `ios/App` papkasida joylashganligi uchun shu yerdan ishga tushiramiz
+        run: cd ios/App && pod install && cd ../..
 
       - name: 7. Xcode loyihasini yig'ish va imzosiz IPA yaratish
         run: |
