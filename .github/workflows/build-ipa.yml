@@ -58,9 +58,9 @@ jobs:
           # Copy the built .app bundle to Payload
           cp -r ios/App/build/Build/Products/Release-iphoneos/App.app Payload/
 
-          # --- CRITICAL STEP: Force copy web assets to the .app bundle ---
-          echo "--- Force copying web assets from dist to Payload/App.app/public ---"
-          cp -R dist/. Payload/App.app/public/
+          # --- CRITICAL STEP: Use rsync to forcefully sync web assets ---
+          echo "--- Force syncing web assets from dist to Payload/App.app/public ---"
+          rsync -av --delete dist/ Payload/App.app/public/
 
           # --- DEBUG: Verify final contents of the Payload before zipping --- #
           echo "--- Listing Final Payload Contents ---"
