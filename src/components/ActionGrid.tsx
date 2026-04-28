@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { useNavigate } from "@tanstack/react-router"; // Import qilamiz
+import { useNavigate } from "@tanstack/react-router";
 import { Plus, Ticket, QrCode, Nfc } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { TransportQrSelectorSheet } from "@/components/TransportQrSelectorSheet";
@@ -71,7 +71,7 @@ function getIconWrapClasses(variant: Action["variant"]) {
 }
 
 export function ActionGrid() {
-  const navigate = useNavigate(); // Hookni ishga tushiramiz
+  const navigate = useNavigate();
   const [qrSelectorOpen, setQrSelectorOpen] = useState(false);
   const [tariffOpen, setTariffOpen] = useState(false);
   const [nfcOpen, setNfcOpen] = useState(false);
@@ -86,8 +86,8 @@ export function ActionGrid() {
 
   const handleSelectBus = () => {
     setQrSelectorOpen(false); // Oynani yopamiz
-    // Yangi sahifaga o'tamiz. Ma'lumotlarni keyinroq URL orqali jo'natamiz.
-    navigate({ to: '/trip-detail' }); 
+    // Skaner sahifasiga o'tamiz
+    navigate({ to: '/scan' }); 
   };
 
   return (
@@ -102,7 +102,7 @@ export function ActionGrid() {
               key={a.id}
               onClick={() => handleClick(a.id)}
               className={`flex ${
-                isLarge ? "aspect-[1/0.85]" : "aspect-[1/0.65]"
+                isLarge ? "aspect-[1/0.85]" : "aspect-[1/0.85]"
               } flex-col items-start justify-between rounded-2xl p-4 pt-5 text-left shadow-md shadow-black/20 transition-transform active:scale-[0.97] ${getClasses(
                 a.variant,
               )}`}
@@ -132,9 +132,8 @@ export function ActionGrid() {
       <TransportQrSelectorSheet
         open={qrSelectorOpen}
         onOpenChange={setQrSelectorOpen}
-        onSelectBus={handleSelectBus} // Yangi funksiyani beramiz
+        onSelectBus={handleSelectBus}
       />
-      {/* LegacyPaymentSheet o'chirib tashlandi */}
       <TariffSheet open={tariffOpen} onOpenChange={setTariffOpen} />
       <NfcSheet open={nfcOpen} onOpenChange={setNfcOpen} />
       <TopupCardSheet open={topupOpen} onOpenChange={setTopupOpen} />
