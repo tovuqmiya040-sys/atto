@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
-import { BarcodeScanner } from '@capacitor-community/barcode-scanner';
-import { toast } from 'sonner';
-import { Loader2, CameraOff } from 'lucide-react';
+
+import { useEffect, useState } from "react";
+import { Loader2, CameraOff, ScanLine } from "lucide-react";
+import { toast } from "sonner";
+import { BarcodeScanner } from "../lib/barcode-scanner";
 
 type QrScannerProps = {
   onResult: (text: string) => void;
@@ -12,82 +13,110 @@ type QrScannerProps = {
 export function QrScanner({ onResult, active, torch }: QrScannerProps) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [isSupported, setIsSupported] = useState(true);
+
+  useEffect(() => {
+    // Check if running in native Capacitor environment
+    const checkSupport = async () => {
+      try {
+        const result = await BarcodeScanner.isSupported();
+        setIsSupported(result.supported);
+      } catch {
+        setIsSupported(false);
+      }
+    };
+    checkSupport();
+  }, []);
 
   useEffect(() => {
     if (!active) {
+      // Stop scanner when not active
+      BarcodeScanner.stopScan().catch(() => {});
       return;
     }
 
-    const startScan = async () => {
-      // Check permission
-      await BarcodeScanner.checkPermission({ force: true });
+    if (!isSupported) {
+      setError("Native skaner qo'llab-quvvatlanmaydi");
+      return;
+    }
 
-      // make background of WebView transparent
-      BarcodeScanner.hideBackground();
-      document.body.style.backgroundColor = 'transparent';
-      setLoading(true);
-      setError(null);
+    let isMounted = true;
+    setLoading(true);
+    setError(null);
 
+    // Hide body and prepare for scan
+    BarcodeScanner.hideBackground();
+
+    const startScanner = async () => {
       try {
-        const result = await BarcodeScanner.startScan();
+        // Check camera permission
+        const permission = await BarcodeScanner.checkPermission({ force: true });
+
+        if (!permission.granted) {
+          throw new Error("Kameraga ruxsat berilmadi");
+        }
+
+        // Start scanning
+        const result = await BarcodeScanner.startScan({
+          targetedFormats: ['QR_CODE'],
+        });
+
+        if (!isMounted) return;
 
         if (result.hasContent) {
-          onResult(result.content as string);
           // Vibrate on successful scan
           try {
             if (window.navigator.vibrate) {
               window.navigator.vibrate(100);
             }
           } catch {}
+
+          onResult(result.content);
         }
       } catch (e: any) {
-        console.error('Scanner error:', e);
-        const msg = e?.message || 'Skanerlashda xatolik';
-        if (msg.toLowerCase() !== 'user cancelled scanning') {
-           setError(msg);
-           toast.error(msg);
+        console.error("Native scanner error:", e);
+        if (isMounted) {
+          const msg = e?.message || "Kamera ishga tushirishda xatolik";
+          if (msg !== 'scan canceled') {
+            setError(msg);
+            toast.error(msg);
+          }
         }
       } finally {
-         setLoading(false);
-         stopScan(); // Ensure scan stops and background is restored
+        if (isMounted) {
+          setLoading(false);
+          // Show background again if scan is done or errored
+          BarcodeScanner.showBackground();
+        }
       }
     };
 
-    const stopScan = () => {
-        document.body.style.backgroundColor = '';
-        BarcodeScanner.showBackground();
-        BarcodeScanner.stopScan();
-    };
-
-    startScan();
+    startScanner();
 
     return () => {
-      stopScan();
+      isMounted = false;
+      // Ensure background is shown and scanner stops when component unmounts
+      BarcodeScanner.showBackground();
+      BarcodeScanner.stopScan().catch(() => {});
     };
-  }, [active, onResult]);
+  }, [active, onResult, isSupported]);
 
+  // Handle torch toggle
   useEffect(() => {
     if (!active) return;
 
     if (torch) {
-        BarcodeScanner.enableTorch();
+      BarcodeScanner.enableTorch().catch(() => {});
     } else {
-        BarcodeScanner.disableTorch();
+      BarcodeScanner.disableTorch().catch(() => {});
     }
   }, [torch, active]);
 
-
-  if (!active) {
-    return null; // Don't render anything if not active
-  }
-
   return (
-    <div className="fixed inset-0 z-50 bg-transparent">
-      {/* Scanner UI - This is mostly transparent to show the camera feed */}
-
+    <div className="relative aspect-square w-full rounded-2xl overflow-hidden bg-transparent">
       {/* Scan frame overlay */}
       <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-        <div className="relative h-3/4 w-3/4 max-w-sm max-h-sm">
+        <div className="relative h-full w-full">
           {/* Corners */}
           <div className="absolute left-0 top-0 h-12 w-12 rounded-tl-2xl border-l-4 border-t-4 border-white/90" />
           <div className="absolute right-0 top-0 h-12 w-12 rounded-tr-2xl border-r-4 border-t-4 border-white/90" />
@@ -96,8 +125,8 @@ export function QrScanner({ onResult, active, torch }: QrScannerProps) {
         </div>
       </div>
 
-      {loading && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-white bg-black/50">
+      {loading && !error && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-white">
           <Loader2 className="h-6 w-6 animate-spin" />
         </div>
       )}
