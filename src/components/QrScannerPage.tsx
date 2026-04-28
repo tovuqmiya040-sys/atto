@@ -21,7 +21,7 @@ export function QrScannerPage({ onScan, onClose }: QrScannerPageProps) {
   }, []);
 
   return (
-    <div className="fixed inset-0 z-[100] flex flex-col bg-[#0f172a]">
+    <div className="fixed inset-0 z-[100] flex flex-col">
       {/* Header */}
       <div className="pt-12 text-center">
         <h1 className="text-xl font-bold text-white">QR to'lov</h1>
