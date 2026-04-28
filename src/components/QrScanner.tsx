@@ -1,8 +1,8 @@
 
 import { useEffect, useState } from "react";
-import { Loader2, CameraOff, ScanLine } from "lucide-react";
+import { Loader2, CameraOff } from "lucide-react";
 import { toast } from "sonner";
-import { BarcodeScanner } from "../lib/barcode-scanner.ts";
+import { BarcodeScanner } from "@capacitor-community/barcode-scanner";
 
 type QrScannerProps = {
   onResult: (text: string) => void;
@@ -13,81 +13,49 @@ type QrScannerProps = {
 export function QrScanner({ onResult, active, torch }: QrScannerProps) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [isSupported, setIsSupported] = useState(true);
-
-  useEffect(() => {
-    // Check if running in native Capacitor environment
-    const checkSupport = async () => {
-      try {
-        const result = await BarcodeScanner.isSupported();
-        setIsSupported(result.supported);
-      } catch {
-        setIsSupported(false);
-      }
-    };
-    checkSupport();
-  }, []);
 
   useEffect(() => {
     if (!active) {
-      // Stop scanner when not active
-      BarcodeScanner.stopScan().catch(() => {});
-      return;
-    }
-
-    if (!isSupported) {
-      setError("Native skaner qo'llab-quvvatlanmaydi");
       return;
     }
 
     let isMounted = true;
-    setLoading(true);
-    setError(null);
-
-    // Hide body and prepare for scan
-    BarcodeScanner.hideBackground();
 
     const startScanner = async () => {
       try {
-        // Check camera permission
+        setLoading(true);
+        setError(null);
+        
+        // Ensure background is transparent for the scanner
+        await BarcodeScanner.hideBackground();
+        document.body.classList.add('scanner-active');
+        
         const permission = await BarcodeScanner.checkPermission({ force: true });
-
         if (!permission.granted) {
           throw new Error("Kameraga ruxsat berilmadi");
         }
 
-        // Start scanning
-        const result = await BarcodeScanner.startScan({
-          targetedFormats: ['QR_CODE'],
-        });
+        const result = await BarcodeScanner.startScan({});
 
-        if (!isMounted) return;
-
-        if (result.hasContent) {
-          // Vibrate on successful scan
+        if (isMounted && result.hasContent) {
           try {
             if (window.navigator.vibrate) {
               window.navigator.vibrate(100);
             }
           } catch {}
-
+          
           onResult(result.content);
         }
       } catch (e: any) {
-        console.error("Native scanner error:", e);
         if (isMounted) {
-          const msg = e?.message || "Kamera ishga tushirishda xatolik";
-          if (msg !== 'scan canceled') {
+          const msg = e.message || "Skanerlashda xatolik yuz berdi";
+          if (e.name !== 'SCAN_CANCELED') {
             setError(msg);
             toast.error(msg);
           }
         }
       } finally {
-        if (isMounted) {
-          setLoading(false);
-          // Show background again if scan is done or errored
-          BarcodeScanner.showBackground();
-        }
+        // Cleanup happens in the return function of useEffect
       }
     };
 
@@ -95,21 +63,30 @@ export function QrScanner({ onResult, active, torch }: QrScannerProps) {
 
     return () => {
       isMounted = false;
-      // Ensure background is shown and scanner stops when component unmounts
+      setLoading(false);
+      // Stop the scanner and show the background
       BarcodeScanner.showBackground();
-      BarcodeScanner.stopScan().catch(() => {});
+      BarcodeScanner.stopScan();
+      document.body.classList.remove('scanner-active');
     };
-  }, [active, onResult, isSupported]);
+  }, [active, onResult]);
 
-  // Handle torch toggle
   useEffect(() => {
     if (!active) return;
+    
+    const toggleTorch = async () => {
+        try {
+            if (torch) {
+                await BarcodeScanner.enableTorch();
+            } else {
+                await BarcodeScanner.disableTorch();
+            }
+        } catch (e) {
+            console.error("Torch error", e);
+        }
+    };
 
-    if (torch) {
-      BarcodeScanner.enableTorch().catch(() => {});
-    } else {
-      BarcodeScanner.disableTorch().catch(() => {});
-    }
+    toggleTorch();
   }, [torch, active]);
 
   return (
