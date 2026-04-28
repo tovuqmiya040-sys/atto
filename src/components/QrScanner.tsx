@@ -12,7 +12,7 @@ type QrScannerProps = {
 
 export function QrScanner({ onResult, active, torch }: QrScannerProps) {
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [isScanning, setIsScanning] = useState(false);
 
   useEffect(() => {
     if (!active) {
@@ -23,17 +23,16 @@ export function QrScanner({ onResult, active, torch }: QrScannerProps) {
 
     const startScanner = async () => {
       try {
-        setLoading(true);
-        setError(null);
-        
-        // Ensure background is transparent for the scanner
-        await BarcodeScanner.hideBackground();
-        document.body.classList.add('scanner-active');
-        
+        // Check permission first
         const permission = await BarcodeScanner.checkPermission({ force: true });
         if (!permission.granted) {
           throw new Error("Kameraga ruxsat berilmadi");
         }
+
+        // Now we are ready to scan
+        setIsScanning(true);
+        await BarcodeScanner.hideBackground();
+        document.body.classList.add('scanner-active');
 
         const result = await BarcodeScanner.startScan({});
 
@@ -55,7 +54,11 @@ export function QrScanner({ onResult, active, torch }: QrScannerProps) {
           }
         }
       } finally {
-        // Cleanup happens in the return function of useEffect
+         if (isMounted) {
+            setIsScanning(false);
+            BarcodeScanner.showBackground();
+            document.body.classList.remove('scanner-active');
+         }
       }
     };
 
@@ -63,11 +66,10 @@ export function QrScanner({ onResult, active, torch }: QrScannerProps) {
 
     return () => {
       isMounted = false;
-      setLoading(false);
-      // Stop the scanner and show the background
-      BarcodeScanner.showBackground();
       BarcodeScanner.stopScan();
+      BarcodeScanner.showBackground();
       document.body.classList.remove('scanner-active');
+      setIsScanning(false);
     };
   }, [active, onResult]);
 
@@ -102,10 +104,10 @@ export function QrScanner({ onResult, active, torch }: QrScannerProps) {
         </div>
       </div>
 
-      {loading && !error && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-white">
-          <Loader2 className="h-6 w-6 animate-spin" />
-        </div>
+      {isScanning && !error && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-white bg-black/50">
+              <Loader2 className="h-6 w-6 animate-spin" />
+          </div>
       )}
 
       {error && (
