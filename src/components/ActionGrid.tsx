@@ -1,7 +1,8 @@
+
 import { useState } from "react";
+import { useNavigate } from "@tanstack/react-router"; // Import qilamiz
 import { Plus, Ticket, QrCode, Nfc } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { LegacyPaymentSheet } from "@/components/LegacyPaymentSheet";
 import { TransportQrSelectorSheet } from "@/components/TransportQrSelectorSheet";
 import {
   TariffSheet,
@@ -70,7 +71,7 @@ function getIconWrapClasses(variant: Action["variant"]) {
 }
 
 export function ActionGrid() {
-  const [paymentOpen, setPaymentOpen] = useState(false);
+  const navigate = useNavigate(); // Hookni ishga tushiramiz
   const [qrSelectorOpen, setQrSelectorOpen] = useState(false);
   const [tariffOpen, setTariffOpen] = useState(false);
   const [nfcOpen, setNfcOpen] = useState(false);
@@ -81,6 +82,12 @@ export function ActionGrid() {
     else if (id === "tariff") setTariffOpen(true);
     else if (id === "nfc") setNfcOpen(true);
     else if (id === "topup") setTopupOpen(true);
+  };
+
+  const handleSelectBus = () => {
+    setQrSelectorOpen(false); // Oynani yopamiz
+    // Yangi sahifaga o'tamiz. Ma'lumotlarni keyinroq URL orqali jo'natamiz.
+    navigate({ to: '/trip-detail' }); 
   };
 
   return (
@@ -94,7 +101,6 @@ export function ActionGrid() {
             <button
               key={a.id}
               onClick={() => handleClick(a.id)}
-              // Reverted to justify-between and adjusted padding to move content slightly down
               className={`flex ${
                 isLarge ? "aspect-[1/0.85]" : "aspect-[1/0.65]"
               } flex-col items-start justify-between rounded-2xl p-4 pt-5 text-left shadow-md shadow-black/20 transition-transform active:scale-[0.97] ${getClasses(
@@ -126,9 +132,9 @@ export function ActionGrid() {
       <TransportQrSelectorSheet
         open={qrSelectorOpen}
         onOpenChange={setQrSelectorOpen}
-        onSelectBus={() => setPaymentOpen(true)}
+        onSelectBus={handleSelectBus} // Yangi funksiyani beramiz
       />
-      <LegacyPaymentSheet open={paymentOpen} onOpenChange={setPaymentOpen} />
+      {/* LegacyPaymentSheet o'chirib tashlandi */}
       <TariffSheet open={tariffOpen} onOpenChange={setTariffOpen} />
       <NfcSheet open={nfcOpen} onOpenChange={setNfcOpen} />
       <TopupCardSheet open={topupOpen} onOpenChange={setTopupOpen} />

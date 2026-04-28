@@ -1,3 +1,4 @@
+
 import { useMemo, useState } from "react";
 import { ArrowRight, ChevronDown } from "lucide-react";
 import { useCards, type TripEntry, type TopupEntry } from "@/context/cards-context";
@@ -167,7 +168,7 @@ function TabButton({ isActive, onClick, children }: { isActive: boolean, onClick
 function TripRow({ item, onOpen }: { item: TripEntry; onOpen: (t: TripEntry) => void }) {
   return (
     <button onClick={() => onOpen(item)} className="flex w-full items-center gap-4 py-4 text-left">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-success/15 text-success">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-success text-white">
             <span className="text-sm font-bold">{item.route}</span>
         </div>
         <div className="flex-1">
