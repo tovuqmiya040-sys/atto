@@ -30,5 +30,11 @@
   "server": {
     "androidScheme": "https",
     "iosScheme": "https"
-  }
+  },
+	"packageClassList": [
+		"BarcodeScanner",
+		"CAPCameraPlugin",
+		"PreferencesPlugin",
+		"SplashScreenPlugin"
+	]
 }
