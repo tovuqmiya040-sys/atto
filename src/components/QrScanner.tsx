@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from "react";
-import { Loader2, CameraOff } from "lucide-react";
+import { CameraOff } from "lucide-react";
 import { toast } from "sonner";
 import { BarcodeScanner } from "@capacitor-community/barcode-scanner";
 
@@ -12,7 +12,6 @@ type QrScannerProps = {
 
 export function QrScanner({ onResult, active, torch }: QrScannerProps) {
   const [error, setError] = useState<string | null>(null);
-  const [isScanning, setIsScanning] = useState(false);
 
   useEffect(() => {
     if (!active) {
@@ -23,18 +22,23 @@ export function QrScanner({ onResult, active, torch }: QrScannerProps) {
 
     const startScanner = async () => {
       try {
-        // Check permission first
+        // Check permission before making UI changes
         const permission = await BarcodeScanner.checkPermission({ force: true });
         if (!permission.granted) {
           throw new Error("Kameraga ruxsat berilmadi");
         }
 
-        // Now we are ready to scan
-        setIsScanning(true);
-        await BarcodeScanner.hideBackground();
+        // Prepare UI for scanning
         document.body.classList.add('scanner-active');
+        await BarcodeScanner.hideBackground(); 
+        setError(null);
 
+        // Start scanning
         const result = await BarcodeScanner.startScan({});
+
+        // Cleanup UI immediately after scan
+        document.body.classList.remove('scanner-active');
+        await BarcodeScanner.showBackground();
 
         if (isMounted && result.hasContent) {
           try {
@@ -45,34 +49,34 @@ export function QrScanner({ onResult, active, torch }: QrScannerProps) {
           
           onResult(result.content);
         }
+
       } catch (e: any) {
+        document.body.classList.remove('scanner-active');
+        BarcodeScanner.showBackground();
+
         if (isMounted) {
           const msg = e.message || "Skanerlashda xatolik yuz berdi";
+          // "Scan canceled" is a normal event, not an error
           if (e.name !== 'SCAN_CANCELED') {
             setError(msg);
             toast.error(msg);
           }
         }
-      } finally {
-         if (isMounted) {
-            setIsScanning(false);
-            BarcodeScanner.showBackground();
-            document.body.classList.remove('scanner-active');
-         }
       }
     };
 
     startScanner();
 
+    // Cleanup function when the component unmounts or `active` becomes false
     return () => {
       isMounted = false;
+      document.body.classList.remove('scanner-active');
       BarcodeScanner.stopScan();
       BarcodeScanner.showBackground();
-      document.body.classList.remove('scanner-active');
-      setIsScanning(false);
     };
   }, [active, onResult]);
 
+  // Handle torch state
   useEffect(() => {
     if (!active) return;
     
@@ -84,7 +88,7 @@ export function QrScanner({ onResult, active, torch }: QrScannerProps) {
                 await BarcodeScanner.disableTorch();
             }
         } catch (e) {
-            console.error("Torch error", e);
+            console.error("Fonar xatosi", e);
         }
     };
 
@@ -93,7 +97,7 @@ export function QrScanner({ onResult, active, torch }: QrScannerProps) {
 
   return (
     <div className="relative aspect-square w-full rounded-2xl overflow-hidden bg-transparent">
-      {/* Scan frame overlay */}
+      {/* Static scan frame overlay */}
       <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
         <div className="relative h-full w-full">
           {/* Corners */}
@@ -104,12 +108,7 @@ export function QrScanner({ onResult, active, torch }: QrScannerProps) {
         </div>
       </div>
 
-      {isScanning && !error && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-white bg-black/50">
-              <Loader2 className="h-6 w-6 animate-spin" />
-          </div>
-      )}
-
+      {/* Error overlay */}
       {error && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/80 px-6 text-center text-white">
           <CameraOff className="h-8 w-8" />

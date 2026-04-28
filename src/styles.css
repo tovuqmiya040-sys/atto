@@ -247,3 +247,8 @@
     animation: scan-line 2s linear infinite;
   }
 }
+
+/* QR Scanner styles */
+body.scanner-active {
+    background-color: transparent !important;
+}
