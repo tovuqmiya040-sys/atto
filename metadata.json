@@ -1,8 +1,0 @@
-{
-  "name": "ATTO",
-  "description": "Transport karta va to'lovlar tizimi (iOS uchun TrollStore versiyasi)",
-  "requestFramePermissions": [
-    "camera",
-    "microphone"
-  ]
-}
