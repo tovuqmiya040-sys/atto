@@ -1,12 +1,15 @@
 
+import { createFileRoute } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { useSearch } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { useCards, type TripEntry } from "@/context/cards-context";
 import { formatNum, formatHM, formatTravelDate } from "@/lib/atto";
-// Keyingi bosqichlar uchun vaqtinchalik o'chirilgan
-// import { PaymentSheet } from "@/components/PaymentSheet";
-// import { FiscalSheet } from "@/components/FiscalSheet"; // Buni yaratishimiz kerak bo'ladi
+
+// Route ni yaratamiz va eksport qilamiz
+export const Route = createFileRoute('/trip-detail')({
+  component: TripDetailPage,
+});
 
 // TripDetailSheetdagi 'Field' komponenti
 function Field({ label, value }: { label: string; value: string }) {
@@ -18,7 +21,7 @@ function Field({ label, value }: { label: string; value: string }) {
   );
 }
 
-export function TripDetailPage() {
+function TripDetailPage() {
   const { cards } = useCards();
   
   // Ma'lumotlarni URLdan olish (keyingi qadamda sozlaymiz)
@@ -44,14 +47,13 @@ export function TripDetailPage() {
     model: "MAN",
     ep: "EP0123456789",
     chek: "1234567890",
-fiskal: "123456789012",
-mxik: "10107001001000000",
-stir: "123456789",
-qqs: 150
+	fiskal: "123456789012",
+	mxik: "10107001001000000",
+	stir: "123456789",
+	qqs: 150
   };
 
   if (!trip || !card || !details) {
-    // Keyinchalik chiroyli "Loading" yoki "Not Found" sahifasi qo'shamiz
     return <div>Ma'lumotlar topilmadi.</div>;
   }
 
@@ -80,13 +82,11 @@ qqs: 150
 
         <div className="space-y-3 px-5 pt-8 pb-4">
             <Button
-              // onClick={() => setQrOpen(true)} // Vaqtinchalik o'chirilgan
               className="h-14 w-full rounded-2xl bg-success text-base font-semibold text-success-foreground hover:bg-success/90"
             >
               QR-kodni ko`rsatish
             </Button>
             <Button
-              // onClick={() => setFiscalOpen(true)} // Vaqtinchalik o'chirilgan
               variant="ghost"
               className="h-14 w-full rounded-2xl bg-surface-elevated text-base font-semibold text-foreground"
             >
