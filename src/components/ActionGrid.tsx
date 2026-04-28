@@ -1,9 +1,9 @@
 
 import { useState } from "react";
-import { useNavigate } from "@tanstack/react-router";
 import { Plus, Ticket, QrCode, Nfc } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { TransportQrSelectorSheet } from "@/components/TransportQrSelectorSheet";
+import { LegacyPaymentSheet } from "@/components/LegacyPaymentSheet";
 import {
   TariffSheet,
   NfcSheet,
@@ -71,8 +71,8 @@ function getIconWrapClasses(variant: Action["variant"]) {
 }
 
 export function ActionGrid() {
-  const navigate = useNavigate();
   const [qrSelectorOpen, setQrSelectorOpen] = useState(false);
+  const [paymentOpen, setPaymentOpen] = useState(false);
   const [tariffOpen, setTariffOpen] = useState(false);
   const [nfcOpen, setNfcOpen] = useState(false);
   const [topupOpen, setTopupOpen] = useState(false);
@@ -85,9 +85,8 @@ export function ActionGrid() {
   };
 
   const handleSelectBus = () => {
-    setQrSelectorOpen(false); // Oynani yopamiz
-    // Skaner sahifasiga o'tamiz
-    navigate({ to: '/scan' }); 
+    setQrSelectorOpen(false);
+    setTimeout(() => setPaymentOpen(true), 200);
   };
 
   return (
@@ -102,7 +101,7 @@ export function ActionGrid() {
               key={a.id}
               onClick={() => handleClick(a.id)}
               className={`flex ${
-                isLarge ? "aspect-[1/0.85]" : "aspect-[1/0.85]"
+                isLarge ? "aspect-[1/0.85]" : "aspect-[1/0.65]"
               } flex-col items-start justify-between rounded-2xl p-4 pt-5 text-left shadow-md shadow-black/20 transition-transform active:scale-[0.97] ${getClasses(
                 a.variant,
               )}`}
@@ -134,6 +133,7 @@ export function ActionGrid() {
         onOpenChange={setQrSelectorOpen}
         onSelectBus={handleSelectBus}
       />
+      <LegacyPaymentSheet open={paymentOpen} onOpenChange={setPaymentOpen} />
       <TariffSheet open={tariffOpen} onOpenChange={setTariffOpen} />
       <NfcSheet open={nfcOpen} onOpenChange={setNfcOpen} />
       <TopupCardSheet open={topupOpen} onOpenChange={setTopupOpen} />
