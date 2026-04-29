@@ -247,3 +247,15 @@
     animation: scan-line 2s linear infinite;
   }
 }
+
+/* QR Scanner styles */
+body.scanner-active {
+  background-color: transparent !important;
+}
+/* Hide the main app content when scanner is active, but keep the scanner page itself visible */
+body.scanner-active #root {
+  visibility: hidden;
+}
+body.scanner-active #root [data-scanner-page] {
+  visibility: visible;
+}

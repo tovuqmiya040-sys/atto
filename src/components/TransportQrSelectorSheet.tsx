@@ -1,4 +1,5 @@
-import { Bus, Train } from "lucide-react";
+
+import { Bus, TrainFront } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -44,7 +45,7 @@ export function TransportQrSelectorSheet({ open, onOpenChange, onSelectBus }: Pr
               onClick={handleBus}
               className="flex w-full items-center gap-4 rounded-2xl bg-surface-elevated p-4 text-left transition-colors active:bg-accent"
             >
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-success/10 text-success">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-success text-white">
                 <Bus className="h-6 w-6" strokeWidth={2} />
               </div>
               <div className="flex-1">
@@ -58,8 +59,8 @@ export function TransportQrSelectorSheet({ open, onOpenChange, onSelectBus }: Pr
               onClick={handleMetro}
               className="flex w-full items-center gap-4 rounded-2xl bg-surface-elevated p-4 text-left transition-colors active:bg-accent"
             >
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-info/10 text-info">
-                <Train className="h-6 w-6" strokeWidth={2} />
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-info text-white">
+                <TrainFront className="h-6 w-6" strokeWidth={2} />
               </div>
               <div className="flex-1">
                 <div className="text-base font-semibold">Metro</div>

@@ -19,6 +19,9 @@
     "Camera": {
       "saveToGallery": false,
       "allowCrop": false
+    },
+    "BarcodeScanner": {
+      "cameraUsageDescription": "ATTO ilovasi QR-kodlarni skanerlash uchun kameradan foydalanadi"
     }
   },
   "ios": {
