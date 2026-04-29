@@ -1,108 +1,89 @@
-name: Build Signed iOS IPA
+name: Build IPA
 
 on:
+  workflow_dispatch:
   push:
-    branches: [ "main" ]
+    branches: [main, master]
 
 jobs:
   build:
     runs-on: macos-14
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v1
+      - uses: oven-sh/setup-bun@v1
         with:
           bun-version: latest
 
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: bun install
 
-      - name: Build Web App
+      - name: Build web
         run: bun run build
         env:
           NODE_ENV: production
 
-      - name: Capacitor Sync and Configuration
+      - name: Debug Build Output
         run: |
-          npm install -g @capacitor/cli
+          echo "Listing dist directory content:"
+          ls -R dist || echo "dist directory not found"
+
+      - name: Capacitor Sync
+        run: |
+          # Ensure dist directory exists and has index.html
+          if [ ! -f "dist/index.html" ]; then
+            echo "Error: dist/index.html not found after build!"
+            exit 1
+          fi
+          
+          # Install Capacitor platforms if not already present
           if [ ! -d "ios" ]; then
             npx cap add ios
           fi
+          
+          # Generate Icons and Splash screens
+          # This step is commented out as the source file is missing
+          # mkdir -p assets
+          # cp "atto icon.jpg" assets/icon.jpg
+          # cp "atto icon.jpg" assets/splash.jpg
+          # npx capacitor-assets generate --ios
+          
+          # Sync and install pods
           npx cap sync ios
+          
+          # Add Camera permissions to Info.plist
           PLIST="ios/App/App/Info.plist"
           if [ -f "$PLIST" ]; then
             plutil -replace NSCameraUsageDescription -string "ATTO QR kodlarni skanerlash uchun kameraga kirish huquqini talab qiladi" "$PLIST"
             plutil -replace NSPhotoLibraryUsageDescription -string "ATTO QR kodlarni saqlash uchun rasm galereyasiga kirish huquqini talab qiladi" "$PLIST"
             plutil -replace NSPhotoLibraryAddUsageDescription -string "ATTO QR kodlarni saqlash uchun rasm galereyasiga kirish huquqini talab qiladi" "$PLIST"
           fi
+          
           cd ios/App && pod install && cd ../..
 
-      - name: Install Apple Certificate and Provisioning Profile
-        env:
-          P12_BASE64: ${{ secrets.P12_BASE64 }}
-          P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
-          PROVISIONING_PROFILE_BASE64: ${{ secrets.PROVISIONING_PROFILE_BASE64 }}
-          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+      - name: Build unsigned IPA
         run: |
-          echo "$P12_BASE64" | base64 --decode > certificate.p12
-          echo "$PROVISIONING_PROFILE_BASE64" | base64 --decode > profile.mobileprovision
-          KEYCHAIN_PATH=$RUNNER_TEMP/build.keychain
-          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
-          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
-          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
-          security import certificate.p12 -k $KEYCHAIN_PATH -P "$P12_PASSWORD" -A
-          security list-keychain -d user -s $KEYCHAIN_PATH
-          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-          cp profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/
+          # Clean build folder
+          rm -rf ios/App/build
+          
+          # Build the project
+          xcodebuild clean build -workspace ios/App/App.xcworkspace \
+            -scheme App \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath ios/App/build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            AD_HOC_CODE_SIGNING_ALLOWED=YES \
+            COMPILER_INDEX_STORE_ENABLE=NO
+          
+          # Create IPA for TrollStore
+          mkdir -p Payload
+          cp -r ios/App/build/Build/Products/Release-iphoneos/App.app Payload/
+          zip -r ATTO.ipa Payload
 
-      - name: Create exportOptions.plist for Ad-Hoc
-        env:
-          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          BUNDLE_ID: ${{ secrets.IOS_BUNDLE_ID }}
-          PROVISIONING_PROFILE_NAME: ${{ secrets.IOS_PROVISIONING_PROFILE_NAME }}
-        run: |
-          cat > exportOptions.plist <<EOF
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-              <key>method</key>
-              <string>ad-hoc</string>
-              <key>teamID</key>
-              <string>$TEAM_ID</string>
-              <key>provisioningProfiles</key>
-              <dict>
-                  <key>$BUNDLE_ID</key>
-                  <string>$PROVISIONING_PROFILE_NAME</string>
-              </dict>
-              <key>signingStyle</key>
-              <string>manual</string>
-              <key>stripSwiftSymbols</key>
-              <true/>
-          </dict>
-          </plist>
-          EOF
-
-      - name: Build and Archive
-        run: |
-          xcodebuild -workspace ios/App/App.xcworkspace -scheme App -sdk iphoneos -configuration Release -archivePath $PWD/build/App.xcarchive clean archive
-          xcodebuild -exportArchive -archivePath $PWD/build/App.xcarchive -exportOptionsPlist exportOptions.plist -exportPath $PWD/build/ipa
-
-      - name: Upload Signed IPA
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
-          name: atto-signed-ipa
-          path: build/ipa/App.ipa
-
-      - name: Cleanup
-        if: always()
-        run: |
-          security delete-keychain $RUNNER_TEMP/build.keychain
-          rm -f certificate.p12 profile.mobileprovision
+          name: ATTO-ipa
+          path: ATTO.ipa
