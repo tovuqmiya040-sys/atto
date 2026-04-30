@@ -184,7 +184,7 @@ export function PaymentSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="bottom"
-        className="max-h-[95vh] overflow-y-auto rounded-t-3xl border-border bg-background p-0 pb-[max(1.5rem,env(safe-area-inset-bottom))]"
+        className="h-[100dvh] max-h-[100dvh] w-full overflow-y-auto rounded-none border-0 bg-background p-0 pt-[env(safe-area-inset-top)] pb-[max(1.5rem,env(safe-area-inset-bottom))]"
       >
         <SheetTitle className="sr-only">
           {stage === "scan"
@@ -334,31 +334,19 @@ export function PaymentSheet({
         )}
 
         {stage === "confirm" && (
-          <div className="flex flex-col px-5 pt-5">
-            <div className="relative flex items-center justify-center pb-4">
-              <div className="text-base font-black tracking-tight">ATTO</div>
-
-              <button
-                onClick={handleCloseTap}
-                onMouseDown={startPressClose}
-                onMouseUp={cancelPressClose}
-                onMouseLeave={cancelPressClose}
-                onTouchStart={startPressClose}
-                onTouchEnd={cancelPressClose}
-                onTouchCancel={cancelPressClose}
-                aria-label="Yopish"
-                className="absolute right-0 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-surface-elevated/70 text-muted-foreground transition-colors hover:text-foreground active:scale-95"
-              >
-                <X className="h-4 w-4" strokeWidth={2.25} />
-              </button>
-            </div>
-
+          <div className="flex flex-col px-5 pt-4">
             <div
-              className="relative overflow-hidden rounded-2xl card-atto-bg p-4 text-white shadow-xl aspect-[1.8/1]"
+              onMouseDown={startPressClose}
+              onMouseUp={cancelPressClose}
+              onMouseLeave={cancelPressClose}
+              onTouchStart={startPressClose}
+              onTouchEnd={cancelPressClose}
+              onTouchCancel={cancelPressClose}
+              className="relative overflow-hidden rounded-2xl card-atto-bg p-4 text-white shadow-xl"
             >
               <div className="absolute inset-0 card-pattern-atto pointer-events-none" />
 
-              <div className="relative z-10 flex h-full flex-col justify-between">
+              <div className="relative z-10 flex flex-col gap-5">
                 <div className="flex items-start justify-between">
                   <div className="text-xs font-bold opacity-80 uppercase tracking-widest">
                     {card.label}
@@ -377,7 +365,7 @@ export function PaymentSheet({
                 </div>
 
                 <div className="flex flex-col items-center gap-1">
-                  <div className="font-mono text-2xl font-black tracking-[0.15em] text-white drop-shadow-md">
+                  <div className="font-mono text-xl font-black tracking-[0.15em] text-white drop-shadow-md">
                     {card.number}
                   </div>
                 </div>
@@ -418,14 +406,14 @@ export function PaymentSheet({
               </div>
             )}
 
-            <div className="mt-6 flex items-center justify-center">
+            <div className="mt-4 flex items-center justify-center">
               <div className="text-sm text-muted-foreground">To'lov</div>
             </div>
             <div className="mt-1 text-center text-2xl font-black tracking-tight">
               {formatNum(FARE)} UZS
             </div>
 
-            <div className="mt-8 space-y-0">
+            <div className="mt-5 space-y-0">
               <div className="flex items-center justify-between border-b border-border/60 py-4">
                 <span className="text-muted-foreground">Yo'nalish</span>
                 {editingRoute ? (
@@ -470,7 +458,7 @@ export function PaymentSheet({
               </div>
             </div>
 
-            <div className="mt-10 space-y-3">
+            <div className="mt-6 space-y-3">
               <Button
                 onClick={handlePay}
                 className="h-14 w-full rounded-2xl bg-success text-base font-semibold text-success-foreground hover:bg-success/90"
